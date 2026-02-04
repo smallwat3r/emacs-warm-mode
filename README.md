@@ -66,7 +66,11 @@ Example configuration:
 
 1. Faces defined after enabling warm-mode will not be transformed. If you load
    new packages while warm-mode is active, toggle it off and on to apply the
-   effect to new faces.
+   effect to new faces. You can automate this for specific packages:
+   ```elisp
+   (eval-after-load 'magit
+     '(when warm-mode (warm-mode 1)))
+   ```
 
 2. Only foreground and background colors are transformed. Attributes like
    `:underline` or `:box` usually inherit from foreground, so they are
