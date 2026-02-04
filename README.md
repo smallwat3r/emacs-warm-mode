@@ -3,6 +3,10 @@
 A global minor mode that warms Emacs colors for nighttime coding. Reduces blue
 light and slightly dims colors across all faces, working with any theme.
 
+An alternative is to switch to a different theme at night, but warm-mode
+preserves your exact color scheme, just making it warmer. This makes it easier
+to adapt without losing familiarity with your theme.
+
 ## Screenshots
 
 Examples using `warm-mode-warmth` 0.25 and `warm-mode-dim` 0.9.
