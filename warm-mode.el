@@ -38,7 +38,7 @@
 
 (require 'color)
 
-(defgroup warm-mode nil
+(defgroup warm nil
   "Warm colors for nighttime coding."
   :group 'faces
   :prefix "warm-mode-")
@@ -55,14 +55,14 @@
 Value should be between 0.0 (no warmth) and 0.5 (very warm)."
   :type 'float
   :set (lambda (sym val) (warm-mode--set-and-refresh sym val 0.0 0.5))
-  :group 'warm-mode)
+  :group 'warm)
 
 (defcustom warm-mode-dim 0.9
   "Brightness multiplier.
 Value should be between 0.5 (very dim) and 1.0 (no dimming)."
   :type 'float
   :set (lambda (sym val) (warm-mode--set-and-refresh sym val 0.5 1.0))
-  :group 'warm-mode)
+  :group 'warm)
 
 (defvar warm-mode--color-cache nil
   "Hash table caching color transformations.")
@@ -120,9 +120,9 @@ Value should be between 0.5 (very dim) and 1.0 (no dimming)."
 
 (defun warm-mode--restore-face (entry)
   "Restore original colors for face from ENTRY."
-  (let ((face (nth 0 entry))
-        (fg (nth 1 entry))
-        (bg (nth 2 entry)))
+  (let ((face (car entry))
+        (fg (cadr entry))
+        (bg (caddr entry)))
     (when (facep face)
       (set-face-foreground face fg)
       (set-face-background face bg))))
