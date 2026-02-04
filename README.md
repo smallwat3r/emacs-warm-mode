@@ -3,6 +3,16 @@
 A global minor mode that warms Emacs colors for nighttime coding. Reduces blue
 light and slightly dims colors across all faces, working with any theme.
 
+## Screenshots
+
+Examples using `warm-mode-warmth` 0.25 and `warm-mode-dim` 0.9.
+
+| Disabled | Enabled |
+|----------|---------|
+| ![modus-vivendi disabled](images/modus-vivendi-disabled.png) | ![modus-vivendi enabled](images/modus-vivendi-enabled.png) |
+| ![modus-operandi disabled](images/modus-operandi-disabled.png) | ![modus-operandi enabled](images/modus-operandi-enabled.png) |
+| ![creamy disabled](images/creamy-disabled.png) | ![creamy enabled](images/creamy-enabled.png) |
+
 ## Installation
 
 ### Manual
