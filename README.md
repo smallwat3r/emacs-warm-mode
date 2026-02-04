@@ -61,3 +61,21 @@ Example configuration:
   (warm-mode-warmth 0.25)
   (warm-mode-dim 0.9))
 ```
+
+## Limitations
+
+1. Faces defined after enabling warm-mode will not be transformed. If you load
+   new packages while warm-mode is active, toggle it off and on to apply the
+   effect to new faces.
+
+2. Only foreground and background colors are transformed. Attributes like
+   `:underline` or `:box` usually inherit from foreground, so they are
+   effectively warmed. However, if a theme explicitly sets a color for these
+   attributes, that color will not be transformed.
+
+3. The mode is global and cannot be enabled per-frame.
+
+4. The warming algorithm is simple and not a proper color temperature shift like
+   f.lux or Redshift. Results may vary depending on your theme.
+
+5. May not change text colors in terminal Emacs where color support is limited.
