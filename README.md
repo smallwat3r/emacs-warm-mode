@@ -47,11 +47,11 @@ M-x warm-mode
 
 ## Customization
 
-| Variable                     | Default                               | Description                              |
-|------------------------------|---------------------------------------|------------------------------------------|
-| `warm-mode-warmth`           | 0.2                                   | Intensity of warm shift (0.0 to 0.5)     |
-| `warm-mode-dim`              | 0.9                                   | Brightness multiplier (0.5 to 1.0)       |
-| `warm-mode-refresh-packages` | See `warm-mode-refresh-packages`      | Common deferred packages that auto-refresh faces on load |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `warm-mode-warmth` | 0.2 | Intensity of warm shift (0.0 to 0.5) |
+| `warm-mode-dim` | 0.9 | Brightness multiplier (0.5 to 1.0) |
+| `warm-mode-refresh-packages` | magit, org, diredfl, diff-hl, corfu, company, flycheck, markdown-mode | Packages that auto-refresh faces on load |
 
 Example configuration:
 
