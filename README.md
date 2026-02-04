@@ -79,10 +79,10 @@ To override the default package list entirely, set it before loading:
 
 ## Limitations
 
-1. Faces defined after enabling warm-mode will not be transformed. Common
-   packages are handled automatically via `warm-mode-refresh-packages`. For
-   other packages, use `warm-mode-add-refresh-package` or manually toggle
-   warm-mode after loading them.
+1. Faces defined after enabling warm-mode will not be transformed. This affects
+   deferred packages that load lazily. Common ones are handled automatically
+   via `warm-mode-refresh-packages`. For others, use
+   `warm-mode-add-refresh-package` or manually toggle warm-mode after loading.
 
 2. Only foreground and background colors are transformed. Attributes like
    `:underline` or `:box` usually inherit from foreground, so they are
