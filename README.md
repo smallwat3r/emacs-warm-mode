@@ -36,7 +36,14 @@ Examples using `warm-mode-warmth` 0.25 and `warm-mode-dim` 0.9.
 
 ## Installation
 
-Clone this repository and add to your `load-path`:
+Using [use-package](https://github.com/jwiegley/use-package):
+
+```elisp
+(use-package warm-mode
+  :ensure (:host github :repo "smallwat3r/emacs-warm-mode"))
+```
+
+Or manually, clone this repository and add to your `load-path`:
 
 ```elisp
 (add-to-list 'load-path "/path/to/emacs-warm-mode")
