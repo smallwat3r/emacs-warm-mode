@@ -69,7 +69,7 @@ Value should be between 0.5 (very dim) and 1.0 (no dimming)."
   '(magit org diredfl diff-hl corfu company flycheck markdown-mode)
   "Packages that trigger a face refresh when loaded.
 These packages define many custom faces that need warming.
-Set this variable before loading warm-mode."
+Set this variable before loading `warm-mode'."
   :type '(repeat symbol)
   :group 'warm)
 
@@ -155,7 +155,7 @@ Set this variable before loading warm-mode."
 
 (defun warm-mode-add-refresh-package (&rest pkgs)
   "Add PKGS to `warm-mode-refresh-packages' and set up their hooks.
-Use this to add packages after warm-mode has loaded."
+Use this to add packages after `warm-mode' has loaded."
   (dolist (pkg pkgs)
     (unless (memq pkg warm-mode-refresh-packages)
       (push pkg warm-mode-refresh-packages)
