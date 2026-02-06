@@ -5,7 +5,8 @@ light and slightly dims colors across all faces, working with any theme.
 
 System-wide tools like [wlsunset](https://sr.ht/~kennylevinsen/wlsunset/)
 apply a blue light filter to your entire screen. warm-mode is useful when you
-only want the effect in Emacs, leaving other applications unaffected. You could
+only want the effect in Emacs, leaving other applications unaffected. It also
+works cross-platform, unlike most system-wide tools. You could
 also combine both for extra warmth.
 
 Another alternative is to switch to a different theme at night, but warm-mode
