@@ -47,7 +47,7 @@
   "Set SYM to VAL clamped between MIN and MAX, and refresh if active."
   (set-default sym (max min (min max val)))
   (when (bound-and-true-p warm-mode)
-    (warm-mode--remove)
+    (warm-mode--remove t)
     (warm-mode--apply)))
 
 (defcustom warm-mode-warmth 0.2
@@ -110,8 +110,9 @@ Value should be between 0.5 (very dim) and 1.0 (no dimming)."
           (when bg-warm (set-face-background face bg-warm))))))
   (redisplay t))
 
-(defun warm-mode--remove ()
-  "Restore original face colors."
+(defun warm-mode--remove (&optional no-redisplay)
+  "Restore original face colors.
+When NO-REDISPLAY is non-nil, skip forcing a redisplay."
   (when warm-mode--original-faces
     (let ((inhibit-redisplay t))
       (dolist (entry warm-mode--original-faces)
@@ -121,7 +122,7 @@ Value should be between 0.5 (very dim) and 1.0 (no dimming)."
           (when (facep face)
             (set-face-foreground face fg)
             (set-face-background face bg)))))
-    (redisplay t))
+    (unless no-redisplay (redisplay t)))
   (setq warm-mode--color-cache nil
         warm-mode--original-faces nil))
 
@@ -136,7 +137,7 @@ Value should be between 0.5 (very dim) and 1.0 (no dimming)."
 (defun warm-mode--refresh ()
   "Refresh warm colors if mode is active."
   (when (bound-and-true-p warm-mode)
-    (warm-mode--remove)
+    (warm-mode--remove t)
     (warm-mode--apply)))
 
 (defvar warm-mode--refresh-timer nil
