@@ -31,9 +31,8 @@
 ;;   M-x warm-mode
 ;;
 ;; Customization:
-;;   `warm-mode-warmth'            - intensity of warm shift (0.0 to 0.5)
-;;   `warm-mode-dim'               - brightness multiplier (0.5 to 1.0)
-;;   `warm-mode-refresh-packages'  - packages that auto-refresh faces on load
+;;   `warm-mode-warmth'  - intensity of warm shift (0.0 to 0.5)
+;;   `warm-mode-dim'     - brightness multiplier (0.5 to 1.0)
 
 ;;; Code:
 
@@ -63,14 +62,6 @@ Value should be between 0.0 (no warmth) and 0.5 (very warm)."
 Value should be between 0.5 (very dim) and 1.0 (no dimming)."
   :type 'float
   :set (lambda (sym val) (warm-mode--set-and-refresh sym val 0.5 1.0))
-  :group 'warm)
-
-(defcustom warm-mode-refresh-packages
-  '(magit org diredfl diff-hl corfu company flycheck markdown-mode)
-  "Packages that trigger a face refresh when loaded.
-These packages define many custom faces that need warming.
-Set this variable before loading `warm-mode'."
-  :type '(repeat symbol)
   :group 'warm)
 
 (defvar warm-mode--color-cache nil
@@ -148,20 +139,19 @@ Set this variable before loading `warm-mode'."
     (warm-mode--remove)
     (warm-mode--apply)))
 
-(defun warm-mode--setup-package-hooks ()
-  "Set up hooks to refresh faces when packages load."
-  (dolist (pkg warm-mode-refresh-packages)
-    (eval-after-load pkg #'warm-mode--refresh)))
+(defvar warm-mode--refresh-timer nil
+  "Timer for debounced face refresh after package loads.")
 
-(defun warm-mode-add-refresh-package (&rest pkgs)
-  "Add PKGS to `warm-mode-refresh-packages' and set up their hooks.
-Use this to add packages after `warm-mode' has loaded."
-  (dolist (pkg pkgs)
-    (unless (memq pkg warm-mode-refresh-packages)
-      (push pkg warm-mode-refresh-packages)
-      (eval-after-load pkg #'warm-mode--refresh))))
-
-(warm-mode--setup-package-hooks)
+(defun warm-mode--refresh-soon (&rest _)
+  "Schedule a debounced `warm-mode--refresh' after a package loads.
+Resets the timer on each call so that rapid successive loads only
+trigger a single refresh."
+  (when (bound-and-true-p warm-mode)
+    (if (memq warm-mode--refresh-timer timer-list)
+        (timer-set-time warm-mode--refresh-timer
+                        (time-add (current-time) 0.5))
+      (setq warm-mode--refresh-timer
+            (run-with-timer 0.5 nil #'warm-mode--refresh)))))
 
 ;;;###autoload
 (define-minor-mode warm-mode
@@ -172,7 +162,12 @@ Reduces blue light and slightly dims colors across all faces."
   (if warm-mode
       (progn
         (advice-add 'load-theme :before #'warm-mode--on-theme-change)
+        (add-hook 'after-load-functions #'warm-mode--refresh-soon)
         (warm-mode--apply))
+    (remove-hook 'after-load-functions #'warm-mode--refresh-soon)
+    (when (memq warm-mode--refresh-timer timer-list)
+      (cancel-timer warm-mode--refresh-timer))
+    (setq warm-mode--refresh-timer nil)
     (advice-remove 'load-theme #'warm-mode--on-theme-change)
     (warm-mode--remove)))
 

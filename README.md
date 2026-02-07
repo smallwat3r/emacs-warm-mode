@@ -64,7 +64,6 @@ M-x warm-mode
 |----------|---------|-------------|
 | `warm-mode-warmth` | 0.2 | Intensity of warm shift (0.0 to 0.5) |
 | `warm-mode-dim` | 0.9 | Brightness multiplier (0.5 to 1.0) |
-| `warm-mode-refresh-packages` | magit, org, diredfl, diff-hl, corfu, company, flycheck, markdown-mode | Packages that auto-refresh faces on load |
 
 Example configuration:
 
@@ -73,38 +72,19 @@ Example configuration:
   :ensure (:host github :repo "smallwat3r/emacs-warm-mode")
   :custom
   (warm-mode-warmth 0.25)
-  (warm-mode-dim 0.9)
-  :config
-  ;; Add extra packages to refresh list
-  (warm-mode-add-refresh-package 'treemacs 'vertico))
-```
-
-To override the default package list entirely, set it before loading:
-
-```elisp
-(use-package warm-mode
-  :ensure (:host github :repo "smallwat3r/emacs-warm-mode")
-  :init
-  (setq warm-mode-refresh-packages '(magit org corfu))
-  :custom
-  (warm-mode-warmth 0.25))
+  (warm-mode-dim 0.9))
 ```
 
 ## Limitations
 
-1. Faces defined after enabling warm-mode will not be transformed. This affects
-   deferred packages that load lazily. Common ones are handled automatically
-   via `warm-mode-refresh-packages`. For others, use
-   `warm-mode-add-refresh-package` or manually toggle warm-mode after loading.
-
-2. Only foreground and background colors are transformed. Attributes like
+1. Only foreground and background colors are transformed. Attributes like
    `:underline` or `:box` usually inherit from foreground, so they are
    effectively warmed. However, if a theme explicitly sets a color for these
    attributes, that color will not be transformed.
 
-3. The mode is global and cannot be enabled per-frame.
+2. The mode is global and cannot be enabled per-frame.
 
-4. The warming algorithm is simple and not a proper color temperature shift like
+3. The warming algorithm is simple and not a proper color temperature shift like
    f.lux or Redshift. Results may vary depending on your theme.
 
-5. May not change text colors in terminal Emacs where color support is limited.
+4. May not change text colors in terminal Emacs where color support is limited.
