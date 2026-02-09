@@ -144,7 +144,7 @@ When NO-REDISPLAY is non-nil, skip forcing a redisplay."
   "Timer for debounced face refresh after package loads.")
 
 (defvar warm-mode--hooks-registered nil
-  "Whether warm-mode has registered its hooks/advice.")
+  "Whether `warm-mode' has registered its hooks/advice.")
 
 (defun warm-mode--register-hooks ()
   "Register advice and hooks once."
