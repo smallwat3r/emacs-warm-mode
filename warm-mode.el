@@ -127,12 +127,12 @@ When NO-REDISPLAY is non-nil, skip forcing a redisplay."
         warm-mode--original-faces nil))
 
 (defun warm-mode--on-theme-change (&rest _)
-  "Disable warm mode when a theme change is detected."
+  "Reapply warm colors after a theme change without toggling the mode."
   (when (bound-and-true-p warm-mode)
     (setq warm-mode--color-cache nil
           warm-mode--original-faces nil)
-    (warm-mode -1)
-    (message "Warm mode disabled (theme changed)")))
+    (warm-mode--remove t)
+    (warm-mode--apply)))
 
 (defun warm-mode--refresh ()
   "Refresh warm colors if mode is active."
@@ -142,6 +142,23 @@ When NO-REDISPLAY is non-nil, skip forcing a redisplay."
 
 (defvar warm-mode--refresh-timer nil
   "Timer for debounced face refresh after package loads.")
+
+(defvar warm-mode--hooks-registered nil
+  "Whether warm-mode has registered its hooks/advice.")
+
+(defun warm-mode--register-hooks ()
+  "Register advice and hooks once."
+  (unless warm-mode--hooks-registered
+    (advice-add 'load-theme :after #'warm-mode--on-theme-change)
+    (add-hook 'after-load-functions #'warm-mode--refresh-soon)
+    (setq warm-mode--hooks-registered t)))
+
+(defun warm-mode--unregister-hooks ()
+  "Remove advice and hooks if present."
+  (when warm-mode--hooks-registered
+    (remove-hook 'after-load-functions #'warm-mode--refresh-soon)
+    (advice-remove 'load-theme #'warm-mode--on-theme-change)
+    (setq warm-mode--hooks-registered nil)))
 
 (defun warm-mode--refresh-soon (&rest _)
   "Schedule a debounced `warm-mode--refresh' after a file is loaded.
@@ -164,14 +181,12 @@ Reduces blue light and slightly dims colors across all faces."
   :lighter " Warm"
   (if warm-mode
       (progn
-        (advice-add 'load-theme :before #'warm-mode--on-theme-change)
-        (add-hook 'after-load-functions #'warm-mode--refresh-soon)
+        (warm-mode--register-hooks)
         (warm-mode--apply))
-    (remove-hook 'after-load-functions #'warm-mode--refresh-soon)
+    (warm-mode--unregister-hooks)
     (when (memq warm-mode--refresh-timer timer-list)
       (cancel-timer warm-mode--refresh-timer))
     (setq warm-mode--refresh-timer nil)
-    (advice-remove 'load-theme #'warm-mode--on-theme-change)
     (warm-mode--remove)))
 
 (provide 'warm-mode)
