@@ -180,7 +180,7 @@ Reduces blue light and slightly dims colors across all faces."
   :global t
   :lighter " Warm"
   (if warm-mode
-      (progn
+      (unless warm-mode--original-faces
         (warm-mode--register-hooks)
         (warm-mode--apply))
     (warm-mode--unregister-hooks)
