@@ -98,3 +98,13 @@ Example configuration:
    f.lux or Redshift. Results may vary depending on your theme.
 
 4. May not change text colors in terminal Emacs where color support is limited.
+
+5. When using `desktop-save-mode` some frame colors may not be properly restored
+   after an Emacs restart. The easiest way to prevent this is to avoid storing
+   them in the desktop session:
+   ```elisp
+   ;; Don't let desktop-save-mode persist frame color params, they can be left
+   ;; stale if Emacs quits while warm-mode is active.
+   (dolist (param '(foreground-color background-color cursor-color))
+     (push (cons param :never) frameset-filter-alist))
+   ```
