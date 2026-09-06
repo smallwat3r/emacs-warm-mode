@@ -38,14 +38,17 @@
 
 (require 'color)
 
-(defgroup warm nil
+(defgroup warm-mode nil
   "Warm colors for nighttime coding."
   :group 'faces
   :prefix "warm-mode-")
 
+(defvar warm-mode)
+
 (defun warm-mode--set-and-refresh (sym val min max)
   "Set SYM to VAL clamped between MIN and MAX, and refresh if active."
   (set-default sym (max min (min max val)))
+  ;; Runs at load time too, before the mode variable exists.
   (when (bound-and-true-p warm-mode)
     (warm-mode--remove t)
     (warm-mode--apply)))
@@ -54,124 +57,106 @@
   "Intensity of the warm color shift.
 Value should be between 0.0 (no warmth) and 0.5 (very warm)."
   :type 'float
-  :set (lambda (sym val) (warm-mode--set-and-refresh sym val 0.0 0.5))
-  :group 'warm)
+  :set (lambda (sym val) (warm-mode--set-and-refresh sym val 0.0 0.5)))
 
 (defcustom warm-mode-dim 0.9
   "Brightness multiplier.
 Value should be between 0.5 (very dim) and 1.0 (no dimming)."
   :type 'float
-  :set (lambda (sym val) (warm-mode--set-and-refresh sym val 0.5 1.0))
-  :group 'warm)
+  :set (lambda (sym val) (warm-mode--set-and-refresh sym val 0.5 1.0)))
 
-(defvar warm-mode--color-cache nil
-  "Hash table caching color transformations.")
+(defvar warm-mode--color-cache (make-hash-table :test #'equal)
+  "Cache mapping an original color string to its warmed color string.")
 
-(defvar warm-mode--original-faces nil
-  "Alist of original face colors before warm mode was applied.")
+(defvar warm-mode--faces (make-hash-table :test #'eq)
+  "Faces warmed so far, each mapped to (FG BG WARM-FG WARM-BG).
+FG and BG are the colors the face had before warming, WARM-FG and
+WARM-BG the colors we set.  Comparing a face against the latter tells
+whether it has been changed behind our back since.")
 
 (defun warm-mode--warm-color (color)
-  "Shift COLOR to be warmer (more red/orange, less blue)."
-  (when (and color (stringp color) warm-mode--color-cache)
+  "Return a warmer, dimmer version of COLOR, or nil if it cannot be parsed."
+  (when (stringp color)
     (or (gethash color warm-mode--color-cache)
-        (condition-case nil
-            ;; Convert color name or hex to RGB floats (0.0-1.0)
-            (let ((rgb (color-name-to-rgb color)))
-              (when rgb
-                (let* ((r (car rgb))
-                       (g (cadr rgb))
-                       (b (caddr rgb))
-                       ;; Red: boost slightly, then dim
-                       (r-warm (min 1.0 (* (+ r (* warm-mode-warmth 0.4))
-                                           warm-mode-dim)))
-                       ;; Green: just dim
-                       (g-warm (* g warm-mode-dim))
-                       ;; Blue: reduce, then dim
-                       (b-warm (* (max 0.0 (- b warm-mode-warmth))
-                                  warm-mode-dim))
-                       (result (color-rgb-to-hex r-warm g-warm b-warm 2)))
-                  (puthash color result warm-mode--color-cache)
-                  result)))
-          (error nil)))))
+        (pcase (color-name-to-rgb color)
+          (`(,r ,g ,b)
+           (puthash color
+                    (color-rgb-to-hex
+                     ;; Red: boost slightly, then dim
+                     (min 1.0 (* (+ r (* warm-mode-warmth 0.4)) warm-mode-dim))
+                     ;; Green: just dim
+                     (* g warm-mode-dim)
+                     ;; Blue: reduce, then dim
+                     (* (max 0.0 (- b warm-mode-warmth)) warm-mode-dim)
+                     2)
+                    warm-mode--color-cache))))))
+
+(defun warm-mode--warm-face (face)
+  "Warm FACE from its original colors.
+A channel still showing the color we last set keeps its saved
+original, anything else was changed since and becomes the new
+original.  Calling this repeatedly never warms a face twice."
+  (let* ((entry (gethash face warm-mode--faces))
+         (fg (face-foreground face nil nil))
+         (bg (face-background face nil nil))
+         (orig-fg (if (and entry (equal fg (nth 2 entry))) (nth 0 entry) fg))
+         (orig-bg (if (and entry (equal bg (nth 3 entry))) (nth 1 entry) bg))
+         (warm-fg (warm-mode--warm-color orig-fg))
+         (warm-bg (warm-mode--warm-color orig-bg)))
+    (when (or warm-fg warm-bg)
+      (puthash face
+               (list orig-fg orig-bg (or warm-fg orig-fg) (or warm-bg orig-bg))
+               warm-mode--faces)
+      (when (and warm-fg (not (equal fg warm-fg)))
+        (set-face-foreground face warm-fg))
+      (when (and warm-bg (not (equal bg warm-bg)))
+        (set-face-background face warm-bg)))))
 
 (defun warm-mode--apply ()
-  "Apply warm color transformation to all faces."
-  (setq warm-mode--color-cache (make-hash-table :test 'equal :size 128)
-        warm-mode--original-faces nil)
+  "Warm every face, then redisplay."
   (let ((inhibit-redisplay t))
-    (dolist (face (face-list))
-      (let* ((fg (face-foreground face nil nil))
-             (bg (face-background face nil nil))
-             (fg-warm (and fg (stringp fg) (warm-mode--warm-color fg)))
-             (bg-warm (and bg (stringp bg) (warm-mode--warm-color bg))))
-        (when (or fg-warm bg-warm)
-          (push (list face fg bg) warm-mode--original-faces)
-          (when fg-warm (set-face-foreground face fg-warm))
-          (when bg-warm (set-face-background face bg-warm))))))
+    (mapc #'warm-mode--warm-face (face-list)))
   (redisplay t))
 
 (defun warm-mode--remove (&optional no-redisplay)
-  "Restore original face colors.
-When NO-REDISPLAY is non-nil, skip forcing a redisplay."
-  (when warm-mode--original-faces
-    (let ((inhibit-redisplay t))
-      (dolist (entry warm-mode--original-faces)
-        (let ((face (car entry))
-              (fg (cadr entry))
-              (bg (caddr entry)))
-          (when (facep face)
-            (set-face-foreground face fg)
-            (set-face-background face bg)))))
-    (unless no-redisplay (redisplay t)))
-  (setq warm-mode--color-cache nil
-        warm-mode--original-faces nil))
+  "Restore the original colors of every warmed face.
+Channels changed since we warmed them are left alone.  When
+NO-REDISPLAY is non-nil, skip forcing a redisplay."
+  (let ((inhibit-redisplay t))
+    (maphash
+     (lambda (face entry)
+       (pcase-let ((`(,fg ,bg ,warm-fg ,warm-bg) entry))
+         (when (facep face)
+           (when (and (not (equal fg warm-fg))
+                      (equal (face-foreground face nil nil) warm-fg))
+             (set-face-foreground face fg))
+           (when (and (not (equal bg warm-bg))
+                      (equal (face-background face nil nil) warm-bg))
+             (set-face-background face bg)))))
+     warm-mode--faces))
+  (clrhash warm-mode--faces)
+  (clrhash warm-mode--color-cache)
+  (unless no-redisplay (redisplay t)))
 
-(defun warm-mode--on-theme-change (&rest _)
-  "Reapply warm colors after a theme change without toggling the mode."
-  (when (bound-and-true-p warm-mode)
-    (setq warm-mode--color-cache nil
-          warm-mode--original-faces nil)
-    (warm-mode--remove t)
-    (warm-mode--apply)))
+(defun warm-mode--around-theme (fn &rest args)
+  "Restore faces, call FN with ARGS to toggle a theme, then rewarm.
+Themes stack, so faces the theme does not touch would otherwise be
+warmed a second time and their originals lost."
+  (if warm-mode
+      (progn
+        (warm-mode--remove t)
+        (unwind-protect (apply fn args)
+          (warm-mode--apply)))
+    (apply fn args)))
 
-(defun warm-mode--refresh ()
-  "Refresh warm colors if mode is active."
-  (when (bound-and-true-p warm-mode)
-    (warm-mode--remove t)
-    (warm-mode--apply)))
+(defun warm-mode--after-spec-set (face &rest _)
+  "Warm FACE right after `defface' or `custom-set-faces' colors it."
+  (when warm-mode (warm-mode--warm-face face)))
 
-(defvar warm-mode--refresh-timer nil
-  "Timer for debounced face refresh after package loads.")
-
-(defvar warm-mode--hooks-registered nil
-  "Whether `warm-mode' has registered its hooks/advice.")
-
-(defun warm-mode--register-hooks ()
-  "Register advice and hooks once."
-  (unless warm-mode--hooks-registered
-    (advice-add 'load-theme :after #'warm-mode--on-theme-change)
-    (add-hook 'after-load-functions #'warm-mode--refresh-soon)
-    (setq warm-mode--hooks-registered t)))
-
-(defun warm-mode--unregister-hooks ()
-  "Remove advice and hooks if present."
-  (when warm-mode--hooks-registered
-    (remove-hook 'after-load-functions #'warm-mode--refresh-soon)
-    (advice-remove 'load-theme #'warm-mode--on-theme-change)
-    (setq warm-mode--hooks-registered nil)))
-
-(defun warm-mode--refresh-soon (&rest _)
-  "Schedule a debounced `warm-mode--refresh' after a file is loaded.
-Hooks into `after-load-functions' which runs on `load' or `require'.
-Deferred packages define faces on load that need warming.  Resets
-the timer on each call so that rapid successive loads only trigger
-a single refresh."
-  (when (bound-and-true-p warm-mode)
-    (if (memq warm-mode--refresh-timer timer-list)
-        (timer-set-time warm-mode--refresh-timer
-                        (time-add (current-time) 0.5))
-      (setq warm-mode--refresh-timer
-            (run-with-timer 0.5 nil #'warm-mode--refresh)))))
+(defun warm-mode--on-first-frame (frame)
+  "Warm faces on FRAME, the first real frame of a daemon."
+  (remove-hook 'after-make-frame-functions #'warm-mode--on-first-frame)
+  (with-selected-frame frame (warm-mode--apply)))
 
 ;;;###autoload
 (define-minor-mode warm-mode
@@ -180,13 +165,19 @@ Reduces blue light and slightly dims colors across all faces."
   :global t
   :lighter " Warm"
   (if warm-mode
-      (unless warm-mode--original-faces
-        (warm-mode--register-hooks)
-        (warm-mode--apply))
-    (warm-mode--unregister-hooks)
-    (when (memq warm-mode--refresh-timer timer-list)
-      (cancel-timer warm-mode--refresh-timer))
-    (setq warm-mode--refresh-timer nil)
+      (progn
+        (advice-add 'enable-theme :around #'warm-mode--around-theme)
+        (advice-add 'disable-theme :around #'warm-mode--around-theme)
+        (advice-add 'face-spec-set :after #'warm-mode--after-spec-set)
+        (if (and (daemonp) (eq (selected-frame) terminal-frame))
+            ;; The daemon's initial frame has no real colors to read,
+            ;; wait for the first client frame instead.
+            (add-hook 'after-make-frame-functions #'warm-mode--on-first-frame)
+          (warm-mode--apply)))
+    (advice-remove 'enable-theme #'warm-mode--around-theme)
+    (advice-remove 'disable-theme #'warm-mode--around-theme)
+    (advice-remove 'face-spec-set #'warm-mode--after-spec-set)
+    (remove-hook 'after-make-frame-functions #'warm-mode--on-first-frame)
     (warm-mode--remove)))
 
 (provide 'warm-mode)

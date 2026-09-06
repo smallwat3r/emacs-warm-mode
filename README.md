@@ -115,3 +115,8 @@ Example configuration:
    (dolist (param '(foreground-color background-color cursor-color))
      (push (cons param :never) frameset-filter-alist))
    ```
+
+6. Faces defined with `defface`, set with `custom-set-faces` or changed by a
+   theme are warmed as they appear. Colors changed directly with
+   `set-face-attribute` while the mode is on are picked up on the next theme
+   change or toggle.
