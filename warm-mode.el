@@ -106,6 +106,15 @@ snaps them to the nearest terminal color when there is no display."
                      2)
                     warm-mode--color-cache))))))
 
+(defun warm-mode--set (face attribute value)
+  "Set ATTRIBUTE of FACE to VALUE on every frame.
+The global defaults for new frames are left alone, `disable-theme'
+merges them back into every face, so writing our colors there would
+make them outlive the theme change.  New frames are warmed by
+`warm-mode--on-new-frame' instead."
+  (dolist (frame (frame-list))
+    (set-face-attribute face frame attribute value)))
+
 (defun warm-mode--warm-face (face)
   "Warm FACE from its original colors.
 A channel still showing the color we last set keeps its saved
@@ -123,9 +132,9 @@ original.  Calling this repeatedly never warms a face twice."
                (list orig-fg orig-bg (or warm-fg orig-fg) (or warm-bg orig-bg))
                warm-mode--faces)
       (when (and warm-fg (not (equal fg warm-fg)))
-        (set-face-foreground face warm-fg))
+        (warm-mode--set face :foreground warm-fg))
       (when (and warm-bg (not (equal bg warm-bg)))
-        (set-face-background face warm-bg)))))
+        (warm-mode--set face :background warm-bg)))))
 
 (defun warm-mode--apply ()
   "Warm every face, then redisplay."
@@ -144,10 +153,10 @@ NO-REDISPLAY is non-nil, skip forcing a redisplay."
          (when (facep face)
            (when (and (not (equal fg warm-fg))
                       (equal (face-foreground face nil nil) warm-fg))
-             (set-face-foreground face fg))
+             (warm-mode--set face :foreground fg))
            (when (and (not (equal bg warm-bg))
                       (equal (face-background face nil nil) warm-bg))
-             (set-face-background face bg)))))
+             (warm-mode--set face :background bg)))))
      warm-mode--faces))
   (clrhash warm-mode--faces)
   (clrhash warm-mode--color-cache)
@@ -168,9 +177,8 @@ warmed a second time and their originals lost."
   "Warm FACE right after `defface' or `custom-set-faces' colors it."
   (when warm-mode (warm-mode--warm-face face)))
 
-(defun warm-mode--on-first-frame (frame)
-  "Warm faces on FRAME, the first real frame of a daemon."
-  (remove-hook 'after-make-frame-functions #'warm-mode--on-first-frame)
+(defun warm-mode--on-new-frame (frame)
+  "Warm faces on the newly created FRAME."
   (with-selected-frame frame (warm-mode--apply)))
 
 ;;;###autoload
@@ -184,15 +192,15 @@ Reduces blue light and slightly dims colors across all faces."
         (advice-add 'enable-theme :around #'warm-mode--around-theme)
         (advice-add 'disable-theme :around #'warm-mode--around-theme)
         (advice-add 'face-spec-set :after #'warm-mode--after-spec-set)
-        (if (and (daemonp) (eq (selected-frame) terminal-frame))
-            ;; The daemon's initial frame has no real colors to read,
-            ;; wait for the first client frame instead.
-            (add-hook 'after-make-frame-functions #'warm-mode--on-first-frame)
+        (add-hook 'after-make-frame-functions #'warm-mode--on-new-frame)
+        ;; The daemon's initial frame has no real colors to read,
+        ;; the hook handles the first client frame instead.
+        (unless (and (daemonp) (eq (selected-frame) terminal-frame))
           (warm-mode--apply)))
     (advice-remove 'enable-theme #'warm-mode--around-theme)
     (advice-remove 'disable-theme #'warm-mode--around-theme)
     (advice-remove 'face-spec-set #'warm-mode--after-spec-set)
-    (remove-hook 'after-make-frame-functions #'warm-mode--on-first-frame)
+    (remove-hook 'after-make-frame-functions #'warm-mode--on-new-frame)
     (warm-mode--remove)))
 
 (provide 'warm-mode)
