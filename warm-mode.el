@@ -74,11 +74,26 @@ FG and BG are the colors the face had before warming, WARM-FG and
 WARM-BG the colors we set.  Comparing a face against the latter tells
 whether it has been changed behind our back since.")
 
+(defun warm-mode--color-to-rgb (color)
+  "Return COLOR as a list of three floats in the range 0 to 1, or nil.
+Hex colors are parsed here rather than by `color-name-to-rgb', which
+snaps them to the nearest terminal color when there is no display."
+  (if (and (string-match "\\`#[[:xdigit:]]+\\'" color)
+           (zerop (% (1- (length color)) 3)))
+      (let* ((n (/ (1- (length color)) 3))
+             (max (float (1- (ash 1 (* 4 n))))))
+        (mapcar (lambda (i)
+                  (/ (string-to-number
+                      (substring color (1+ (* i n)) (1+ (* (1+ i) n))) 16)
+                     max))
+                '(0 1 2)))
+    (color-name-to-rgb color)))
+
 (defun warm-mode--warm-color (color)
   "Return a warmer, dimmer version of COLOR, or nil if it cannot be parsed."
   (when (stringp color)
     (or (gethash color warm-mode--color-cache)
-        (pcase (color-name-to-rgb color)
+        (pcase (warm-mode--color-to-rgb color)
           (`(,r ,g ,b)
            (puthash color
                     (color-rgb-to-hex

@@ -36,7 +36,7 @@
         (warm-mode-dim 0.9))
     (clrhash warm-mode--color-cache)
     (pcase-let ((`(,r ,g ,b)
-                 (color-name-to-rgb (warm-mode--warm-color "#8080ff"))))
+                 (warm-mode--color-to-rgb (warm-mode--warm-color "#8080ff"))))
       (should (> r 0.5))
       (should (< g 0.5))
       (should (< b 0.75)))
