@@ -38,7 +38,7 @@
 
 (require 'color)
 
-(defgroup warm-mode nil
+(defgroup warm nil
   "Warm colors for nighttime coding."
   :group 'faces
   :prefix "warm-mode-")
