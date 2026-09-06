@@ -92,6 +92,12 @@ Example configuration:
   (warm-mode-dim 0.9))
 ```
 
+## Development
+
+```
+emacs -Q --batch -l warm-mode.el -l warm-mode-test.el -f ert-run-tests-batch-and-exit
+```
+
 ## Limitations
 
 1. Only foreground and background colors are transformed. Attributes like
