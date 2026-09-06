@@ -46,7 +46,14 @@ Available on [MELPA](https://melpa.org/#/warm-mode). Using
   :ensure t)
 ```
 
-Or from source:
+Or from source with use-package's `:vc` (Emacs 30):
+
+```elisp
+(use-package warm-mode
+  :vc (:url "https://github.com/smallwat3r/emacs-warm-mode"))
+```
+
+Or with [Elpaca](https://github.com/progfolio/elpaca):
 
 ```elisp
 (use-package warm-mode
